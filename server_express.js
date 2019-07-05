@@ -6,7 +6,7 @@ var bodyParser = "";
 var appConfig = "";
 var loadingApp = false;
 
-const port = null;
+var port = "";
 var requestHeader = "";
 var diURL = [];
 var pgURL = [];
@@ -28,36 +28,36 @@ try{
 
 	//requestHeader
 	requestHeader = {
-			"header" : {
-				"Accept" : appConfig.requestHeader.Accept,
-				"X-M2M-RI" : appConfig.requestHeader.X-M2M-RI,
-				"X-M2M-Origin" : appConfig.requestHeader.X-M2M-Origin	
-			}
+		"header" : {
+			"Accept" : appConfig.requestHeader.Accept,
+			"X-M2M-RI" : appConfig.requestHeader.X-M2M-RI,
+			"X-M2M-Origin" : appConfig.requestHeader.X-M2M-Origin	
+		}
 	}
 
-	//URLs
-	//Device Information
-	diURL['deviceType'] = appConfig.MobiusURL.deviceInformation.deviceType;
-	diURL['deviceName'] = appConfig.MobiusURL.deviceInformation.deviceName;
-	dIURL['deviceLocation'] = appConfig.MobiusURL.deviceInformation.deviceLocation;
+		//URLs
+		//Device Information
+		diURL['deviceType'] = appConfig.MobiusURL.deviceInformation.deviceType;
+		diURL['deviceName'] = appConfig.MobiusURL.deviceInformation.deviceName;
+		diURL['deviceLocation'] = appConfig.MobiusURL.deviceInformation.deviceLocation;
 
-	//Power Generation
-	pgURL['amountPerMinute'] = appConfig.MobiusURL.powerGeneration.amountPerMinute;
-	pgURL['co2emissions'] =  appConfig.MobiusURL.powerGeneration.co2emissions;
-	pgURL['powerGenerationYesterday'] =  appConfig.MobiusURL.powerGeneration.powerGenerationYesterday;
-	pgURL['powerGenerationTotal'] =  appConfig.MobiusURL.powerGeneration.powerGenerationTotal;
+		//Power Generation
+		pgURL['amountPerMinute'] = appConfig.MobiusURL.powerGeneration.amountPerMinute;
+		pgURL['co2emissions'] =  appConfig.MobiusURL.powerGeneration.co2emissions;
+		pgURL['powerGenerationYesterday'] =  appConfig.MobiusURL.powerGeneration.powerGenerationYesterday;
+		pgURL['powerGenerationTotal'] =  appConfig.MobiusURL.powerGeneration.powerGenerationTotal;
 
-	//Consumption
-	conURL['amountPerMinute'] = appConfig.MobiusURL.consumption.amountPerMinute;
-	conURL['consumptionTotal'] = appConfig.MobiusURL.consumption.consumptionTotal;
-	conURL['consumptionYesterday'] = appConfig.MobiusURL.consumption.consumptionYesterday;
+		//Consumption
+		conURL['amountPerMinute'] = appConfig.MobiusURL.consumption.amountPerMinute;
+		conURL['consumptionTotal'] = appConfig.MobiusURL.consumption.consumptionTotal;
+		conURL['consumptionYesterday'] = appConfig.MobiusURL.consumption.consumptionYesterday;
 
-	//Battery
-	battURL['currentAmount'] = appConfig.MobiusURL.battery.currentAmount;
-	battURL['maxAmount'] = appConfig.MobiusURL.battery.maxAmount;
+		//Battery
+		battURL['currentAmount'] = appConfig.MobiusURL.battery.currentAmount;
+		battURL['maxAmount'] = appConfig.MobiusURL.battery.maxAmount;
 
-	//Warning
-	warnURL = appConfig.MobiusURL.warningAddress;
+		//Warning
+		warnURL = appConfig.MobiusURL.warningAddress;
 	
 	//Flag for running the application
 	loadingApp = true;
