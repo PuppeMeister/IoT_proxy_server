@@ -6,15 +6,67 @@ var bodyParser = "";
 var appConfig = "";
 var loadingApp = false;
 
+const port = null;
+var requestHeader = "";
+var diURL = [];
+var pgURL = [];
+var conURL = [];
+var battURL = [];
+var warnURL = "";
+
+
+
 try{
 	appConfig = require('./config/app_config.js');
 	express = require('express');
 	bodyParser = require('body-parser');
+	
+	//Getting Value from Config File
+	
+	//PORT
+	port = appConfig.port;
 
+	//requestHeader
+	requestHeader = {
+			"header" : {
+				"Accept" : appConfig.requestHeader.Accept,
+				"X-M2M-RI" : appConfig.requestHeader.X-M2M-RI,
+				"X-M2M-Origin" : appConfig.requestHeader.X-M2M-Origin	
+			}
+	}
+
+	//URLs
+	//Device Information
+	diURL['deviceType'] = appConfig.MobiusURL.deviceInformation.deviceType;
+	diURL['deviceName'] = appConfig.MobiusURL.deviceInformation.deviceName;
+	dIURL['deviceLocation'] = appConfig.MobiusURL.deviceInformation.deviceLocation;
+
+	//Power Generation
+	pgURL['amountPerMinute'] = appConfig.MobiusURL.powerGeneration.amountPerMinute;
+	pgURL['co2emissions'] =  appConfig.MobiusURL.powerGeneration.co2emissions;
+	pgURL['powerGenerationYesterday'] =  appConfig.MobiusURL.powerGeneration.powerGenerationYesterday;
+	pgURL['powerGenerationTotal'] =  appConfig.MobiusURL.powerGeneration.powerGenerationTotal;
+
+	//Consumption
+	conURL['amountPerMinute'] = appConfig.MobiusURL.consumption.amountPerMinute;
+	conURL['consumptionTotal'] = appConfig.MobiusURL.consumption.consumptionTotal;
+	conURL['consumptionYesterday'] = appConfig.MobiusURL.consumption.consumptionYesterday;
+
+	//Battery
+	battURL['currentAmount'] = appConfig.MobiusURL.battery.currentAmount;
+	battURL['maxAmount'] = appConfig.MobiusURL.battery.maxAmount;
+
+	//Warning
+	warnURL = appConfig.MobiusURL.warningAddress;
+	
+	//Flag for running the application
 	loadingApp = true;
+
 }catch(e){
 	console.log("Application is failed to start. "+e);
 }
+
+
 
 if(loadingApp){
 
@@ -22,50 +74,26 @@ if(loadingApp){
 		var app = express();
 		app.use(bodyParser.urlencoded({ extended: false }));
 		app.use(bodyParser.json())
-		
-		const port = 19998;
-		
-		/*var requestHeader = {
-					"headers" :{
-						"Accept" : "application/json",
-						"X-M2M-RI" : "12345",
-						"X-M2M-Origin" : "S20170717074825768bp2l"	
-					}};*/
-					
-		var requestHeader = { 
-						"Accept" : "application/json",
-						"X-M2M-RI" : "12345",
-						"X-M2M-Origin" : "S20170717074825768bp2l"	
-					};			
-					
-		var deviceInformationAddress = [];
-		deviceInformationAddress[0] = "http://203.250.148.89:7579/Mobius/Device_1_Sample/deviceInformation/deviceType/latest";
-		deviceInformationAddress[1] = "http://203.250.148.89:7579/Mobius/Device_1_Sample/deviceInformation/deviceName/latest";
-		deviceInformationAddress[2] = "http://203.250.148.89:7579/Mobius/Device_1_Sample/deviceInformation/deviceLocation/latest";
-		
+	
+		//Getting Device Information - Device Type from Mobius
 		app.get('/deviceInformation/deviceType', (req, res) => {
 			
 			console.log("Open Sesame - Device Type");
 			// Setting URL and headers for request
 			var options = {
-				url: deviceInformationAddress[0],
+				url: diURL['deviceType'],
 				headers : requestHeader
 				
 			};
 			
 			var getData = getMobiusData(options);
 			
-			res.setHeader('Content-Type', 'application/json');
-			res.header("Access-Control-Allow-Origin", "*");
-			res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+			res = setReponseHeader(res);
 			
 			getData.then(function(result) {
 			
-			//res.statusCode = 200; 
-			//res.setHeader('Content-Type', 'text/event-stream');
+		
 			var sentResult = {"finalResult" : result['m2m:cin']['con']};
-			//res.send("{'result':'"+result['m2m:cin']['con']+"'}");
-			//res.send(result['m2m:cin']['con']);
 			res.send(sentResult);
 		
 			
@@ -82,21 +110,20 @@ if(loadingApp){
 			
 		});
 		
+		//Getting Device Information - Device Name from Mobius
 		app.get('/deviceInformation/deviceName', (req, res) => {
 			
 			console.log("Open Sesame - Device Name");
 			// Setting URL and headers for request
 			var options = {
-				url: deviceInformationAddress[1],
+				url: diURL['deviceName'],
 				headers : requestHeader
 				
 			};
 			
 			var getData = getMobiusData(options);
 			
-			res.setHeader('Content-Type', 'application/json');
-			res.header("Access-Control-Allow-Origin", "*");
-			res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+			res = setReponseHeader(res);
 			
 			getData.then(function(result) {
 			
@@ -114,21 +141,20 @@ if(loadingApp){
 			
 		});
 		
+		//Getting Device Information - Device Location from Mobius
 		app.get('/deviceInformation/deviceLocation', (req, res) => {
 			
 			console.log("Open Sesame - Device Location");
 			// Setting URL and headers for request
 			var options = {
-				url: deviceInformationAddress[2],
+				url: dIURL['deviceLocation'],
 				headers : requestHeader
 				
 			};
 			
 			var getData = getMobiusData(options);
 			
-			res.setHeader('Content-Type', 'application/json');
-			res.header("Access-Control-Allow-Origin", "*");
-			res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+			res = setReponseHeader(res);
 			
 			getData.then(function(result) {
 			
@@ -147,20 +173,13 @@ if(loadingApp){
 			
 		});
 		
-		
-		var powerGenerationAddress = [];
-		powerGenerationAddress[0] = "http://203.250.148.89:7579/Mobius/Device_1_Sample/deviceUpdatedData/powerGeneration/amountPerMinute/latest";
-		powerGenerationAddress[1] = "http://203.250.148.89:7579/Mobius/Device_1_Sample/deviceUpdatedData/powerGeneration/co2emissions/latest";
-		powerGenerationAddress[2] = "http://203.250.148.89:7579/Mobius/Device_1_Sample/deviceUpdatedData/powerGeneration/yesterday/latest";
-		powerGenerationAddress[3] = "http://203.250.148.89:7579/Mobius/Device_1_Sample/deviceUpdatedData/powerGeneration/total/latest";
-		
-		
+		//Getting Power Generation - amount per minute rom Mobius
 		app.get('/powerGeneration/amountPerMinute', (req, res) => {
 			
 			console.log("Open Sesame - Power Generation - amountPerMinute");
 			// Setting URL and headers for request
 			var options = {
-				url: powerGenerationAddress[0],
+				url: pgURL['amountPerMinute'],
 				headers : requestHeader
 				
 			};
@@ -186,12 +205,13 @@ if(loadingApp){
 			
 		});
 		
+		//Getting Power Generation - Co2 Emissions rom Mobius
 		app.get('/powerGeneration/co2emissions', (req, res) => {
 			
 			console.log("Open Sesame - Power Generation - co2emissions");
 			// Setting URL and headers for request
 			var options = {
-				url: powerGenerationAddress[1],
+				url: pgURL['co2emissions'],
 				headers : requestHeader
 				
 			};
@@ -217,12 +237,13 @@ if(loadingApp){
 			
 		});
 		
+		//Getting Power Generation - power Generation Yesterday from Mobius
 		app.get('/powerGeneration/yesterday', (req, res) => {
 			
 			console.log("Open Sesame - Power Generation - Device Location");
 			// Setting URL and headers for request
 			var options = {
-				url: powerGenerationAddress[2],
+				url: pgURL['powerGenerationYesterday'],
 				headers : requestHeader
 				
 			};
@@ -248,12 +269,13 @@ if(loadingApp){
 			
 		});
 		
+		//Getting Power Generation - power Generation Total from Mobius
 		app.get('/powerGeneration/total', (req, res) => {
 			
 			console.log("Open Sesame - Power Generation - total");
 			// Setting URL and headers for request
 			var options = {
-				url: powerGenerationAddress[3],
+				url: pgURL['powerGenerationTotal'],
 				headers : requestHeader
 				
 			};
@@ -279,17 +301,13 @@ if(loadingApp){
 			
 		});
 		
-		var consumptionAddress = [];
-		consumptionAddress[0] = "http://203.250.148.89:7579/Mobius/Device_1_Sample/deviceUpdatedData/consumption/amountPerMinute/latest";
-		consumptionAddress[1] = "http://203.250.148.89:7579/Mobius/Device_1_Sample/deviceUpdatedData/consumption/total/latest";
-		consumptionAddress[2] = "http://203.250.148.89:7579/Mobius/Device_1_Sample/deviceUpdatedData/consumption/yesterday/latest";
-		
+		//Getting Consumption Amount Per Minute
 		app.get('/consumption/amountPerMinute', (req, res) => {
 			
 			console.log("Open Sesame - Consumption - amountPerMinute");
 			// Setting URL and headers for request
 			var options = {
-				url: consumptionAddress[0],
+				url: conURL['amountPerMinute'],
 				headers : requestHeader
 				
 			};
@@ -315,12 +333,13 @@ if(loadingApp){
 			
 		});
 		
+		//Getting Consumption Total
 		app.get('/consumption/total', (req, res) => {
 			
 			console.log("Open Sesame - Consumption - Total");
 			// Setting URL and headers for request
 			var options = {
-				url: consumptionAddress[1],
+				url: conURL['consumptionTotal'],
 				headers : requestHeader
 				
 			};
@@ -346,12 +365,13 @@ if(loadingApp){
 			
 		});
 		
+		//Getting Consumption Amount Yesterday
 		app.get('/consumption/yesterday', (req, res) => {
 			
 			console.log("Open Sesame - Consumption - yesterday");
 			// Setting URL and headers for request
 			var options = {
-				url: consumptionAddress[2],
+				url: conURL['consumptionYesterday'],
 				headers : requestHeader
 				
 			};
@@ -377,16 +397,13 @@ if(loadingApp){
 			
 		});
 		
-		var batteryAddress = [];
-		batteryAddress[0] = "http://203.250.148.89:7579/Mobius/Device_1_Sample/deviceUpdatedData/bateryLevel/currentAmount/latest";
-		batteryAddress[1] = "http://203.250.148.89:7579/Mobius/Device_1_Sample/deviceUpdatedData/bateryLevel/maxAmount/latest";
-		
+		//Getting battery current amount
 		app.get('/battery/currentAmount', (req, res) => {
 			
 			console.log("Open Sesame - Battery - Current Amount");
 			// Setting URL and headers for request
 			var options = {
-				url: batteryAddress[0],
+				url: battURL['currentAmount'],
 				headers : requestHeader
 				
 			};
@@ -412,12 +429,13 @@ if(loadingApp){
 			
 		});
 		
+		//Getting Battery Max Amount
 		app.get('/battery/maxAmount', (req, res) => {
 			
 			console.log("Open Sesame - Battery - Max Amount");
 			// Setting URL and headers for request
 			var options = {
-				url: batteryAddress[1],
+				url: battURL['maxAmount'],
 				headers : requestHeader
 				
 			};
@@ -443,13 +461,13 @@ if(loadingApp){
 			
 		});
 		
-		var warningAddress = "http://203.250.148.89:7579/Mobius/Device_1_Sample/deviceUpdatedData/warning/latest";
+		//Getting Warning 
 		app.get('/warning', (req, res) => {
 			
 			console.log("Open Sesame - Warning");
 			// Setting URL and headers for request
 			var options = {
-				url: warningAddress,
+				url: warnURL,
 				headers : requestHeader
 				
 			};
@@ -514,23 +532,6 @@ if(loadingApp){
 			});
 			
 		}
-		
-		function getResultFromMobius2(destinationUrl){
-		
-			const axios = require('axios');
-			
-			return new Promise(function(resolve, reject) {
-				// Do async job
-				axios.get(destinationUrl, function(err, resp, body) {
-					if (err) {
-						reject(err);
-					} else {
-						resolve(JSON.parse(body));
-					}
-				})
-			})
-			
-		}
 			
 		function getMobiusData(options) {
 			const request = require("request");
@@ -549,7 +550,7 @@ if(loadingApp){
 		}
 		
 		//console.log("Get Data From Config -->"+ appConfig.get('Test.Gretting')+" and "+appConfig.get('Test-2.Gretting'));
-		console.log("Get Data From Config -->"+ appConfig.Test.Gretting);
+		
 		app.listen(port, () => console.log('Gator app listening on port 19998! and with POST listening'));
 }
 

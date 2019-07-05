@@ -1,5 +1,8 @@
 
 module.exports = {
+    
+    "port" : "19998",
+
     "MobiusURL":
     {
         "deviceInformation" :
@@ -30,6 +33,12 @@ module.exports = {
 
         "warningAddress" : "http://203.250.148.89:7579/Mobius/Device_1_Sample/deviceUpdatedData/warning/latest"
 		
+    },
+
+    "requestHeader" :{
+        "Accept" : "application/json",
+		"X-M2M-RI" : "12345",
+		"X-M2M-Origin" : "S20170717074825768bp2l"	
     }
 
 }
