@@ -37,8 +37,8 @@ module.exports = {
 
     "requestHeader" :{
         "Accept" : "application/json",
-		"X-M2M-RI" : "12345",
-		"X-M2M-Origin" : "S20170717074825768bp2l"	
+		"XM2MRI" : "12345",
+		"XM2MOrigin" : "S20170717074825768bp2l"	
     }
 
 }

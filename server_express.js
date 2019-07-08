@@ -2,6 +2,18 @@
 
 var express = "";
 var bodyParser = "";
+//Variable For Logging
+var log = "";
+var logConfig = {
+	appenders: {
+		everything: { type: 'file', filename: './log/logging.log' }
+	  },
+	  categories: {
+		default: { appenders: [ 'everything' ], level: 'debug' }
+	  }
+};
+const logger = "";
+
 //Load Configuration File
 var appConfig = "";
 var loadingApp = false;
@@ -17,21 +29,34 @@ var warnURL = "";
 
 
 try{
+
 	appConfig = require('./config/app_config.js');
 	express = require('express');
 	bodyParser = require('body-parser');
 	
+	log = require('log4js').configure(logConfig);
+	logger = log.getLogger();
+	logger.debug('Kiki, do you love me?');
+
+	//Preparing Logging
+
+
 	//Getting Value from Config File
 	
 	//PORT
 	port = appConfig.port;
 
 	//requestHeader
+	
+	//console.log("Value From appConfig.requestHeader.Accept = "+appConfig.requestHeader.Accept);
+	//console.log("Value From appConfig.requestHeader.X-M2M-RI = "+appConfig.requestHeader.XM2MRI);
+	//console.log("Value From appConfig.requestHeader.X-M2M-Origin = "+appConfig.requestHeader.XM2MOrigin);
+	
 	requestHeader = {
 		"header" : {
 			"Accept" : appConfig.requestHeader.Accept,
-			"X-M2M-RI" : appConfig.requestHeader.X-M2M-RI,
-			"X-M2M-Origin" : appConfig.requestHeader.X-M2M-Origin	
+			"X-M2M-RI" : appConfig.requestHeader.XM2MRI,
+			"X-M2M-Origin" : appConfig.requestHeader.XM2MOrigin	
 		}
 	}
 
