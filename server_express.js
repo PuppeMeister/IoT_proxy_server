@@ -94,38 +94,63 @@ if(loadingApp){
 		app.use(bodyParser.urlencoded({ extended: false }));
 		app.use(bodyParser.json())
 	
+		var getRequestedData = {
+			doWork : function (destinationUrl, res, activityName){
+		
+				console.log("Open Sesame - "+activityName);
+				logger.debug("Get "+activityName+ "Data");
+				console.log("URL = "+destinationUrl);
+				console.log("Activity Name = "+activityName);
+				
+				// Setting URL and headers for request
+				var options = {
+					url: destinationUrl,
+					headers : requestHeader
+					
+				};
+				
+				var getData = getMobiusData(options);
+				res = setReponseHeader(res);
+				
+				getData.then(function(result) {
+				
+					var sentResult = {"finalResult" : result['m2m:cin']['con']};
+					res.send(sentResult);
+			
+				}, function(err) {
+				
+				res.statusCode = 404; 
+				res.send("{result : Failed Retriving}");
+				
+				console.log("Failed to Retrieve "+activityName+" "+err);
+				logger.error("Failed to Retrieve "+activityName+" "+err);
+					
+				})
+				
+			}
+		};
+
 		//Getting Device Information - Device Type from Mobius
 		app.get('/deviceInformation/deviceType', (req, res) => {
 			
-			console.log("Open Sesame - Device Type");
-			// Setting URL and headers for request
-			var options = {
-				url: diURL['deviceType'],
-				headers : requestHeader
+	
+				//url: diURL['deviceType']
+				var worker = getRequestedData;
+					//getData : getResultFromMobius(diURL['deviceType'], res, "Device Type")
 				
-			};
-			
-			var getData = getMobiusData(options);
-			
-			res = setReponseHeader(res);
-			
-			getData.then(function(result) {
-			
-		
-			var sentResult = {"finalResult" : result['m2m:cin']['con']};
-			res.send(sentResult);
-		
-			
-			//console.log(result['m2m:cin']['con']);
-			}, function(err) {
-			
-			res.statusCode = 404; 
-			res.send("{result : Failed Retriving}");
-			console.log(err);
 				
-			})	
-			
-		
+				try{
+					console.log("Run!! Run!!");
+					worker.doWork(diURL['deviceType'], res, "Device Type");
+				
+				}catch(e){
+					console.log("Failed to Get Data "+e);
+				}
+				finally{
+					delete worker;
+					
+				}
+				
 			
 		});
 		
@@ -525,7 +550,7 @@ if(loadingApp){
 		
 		function getResultFromMobius(destinationUrl, res, activityName){
 		
-			console.log("Open Sesame - Device Location");
+			console.log("Open Sesame - "+activityName);
 			logger.debug("Get "+activityName+ "Data");
 			
 			// Setting URL and headers for request
