@@ -2,8 +2,9 @@
 
 var express = "";
 var bodyParser = "";
-//Variable For Logging
-var log = "";
+
+//Prepare For Logging
+
 var logConfig = {
 	appenders: {
 		everything: { type: 'file', filename: './log/logging.log' }
@@ -12,7 +13,9 @@ var logConfig = {
 		default: { appenders: [ 'everything' ], level: 'debug' }
 	  }
 };
-const logger = "";
+var log = require('log4js').configure(logConfig);
+const logger = log.getLogger();
+
 
 //Load Configuration File
 var appConfig = "";
@@ -34,20 +37,10 @@ try{
 	express = require('express');
 	bodyParser = require('body-parser');
 	
-	log = require('log4js').configure(logConfig);
-	logger = log.getLogger();
-	logger.debug('Kiki, do you love me?');
-
-	//Preparing Logging
-
-
-	//Getting Value from Config File
-	
 	//PORT
 	port = appConfig.port;
 
 	//requestHeader
-	
 	//console.log("Value From appConfig.requestHeader.Accept = "+appConfig.requestHeader.Accept);
 	//console.log("Value From appConfig.requestHeader.X-M2M-RI = "+appConfig.requestHeader.XM2MRI);
 	//console.log("Value From appConfig.requestHeader.X-M2M-Origin = "+appConfig.requestHeader.XM2MOrigin);
@@ -89,6 +82,7 @@ try{
 
 }catch(e){
 	console.log("Application is failed to start. "+e);
+	logger.error("Application is failed to start. "+e);
 }
 
 
@@ -529,32 +523,34 @@ if(loadingApp){
 		
 		
 		
-		function getResultFromMobius(destinationUrl, res){
+		function getResultFromMobius(destinationUrl, res, activityName){
 		
-			const axios = require('axios');
-			var resultData = [2];
-			resultData[0] = "200";
+			console.log("Open Sesame - Device Location");
+			logger.debug("Get "+activityName+ "Data");
 			
-			axios.get(destinationUrl, requestHeader)
-			.then(response => {
+			// Setting URL and headers for request
+			var options = {
+				url: destinationUrl,
+				headers : requestHeader
+				
+			};
 			
-					//console.log(" New! response.data = "+response.data['m2m:cin']['con']);
-					//console.log("response.status = "+response.status);
-					
-					res.statusCode = 200;
-					res.setHeader('Content-Type', 'application/json');
-					res.send('An alligator approaches!Final Result = '+response.data['m2m:cin']['con']);
-					
-					//return response.data['m2m:cin']['con'];
-					//resultData[1] = response.data['m2m:cin']['con'];
-					//console.log("Inside resultData = "+resultData[1]);
+			var getData = getMobiusData(options);
+			res = setReponseHeader(res);
+			getData.then(function(result) {
+			
+			var sentResult = {"finalResult" : result['m2m:cin']['con']};
+			res.send(sentResult);
+		
+			}, function(err) {
+			
+			res.statusCode = 404; 
+			res.send("{result : Failed Retriving}");
+			
+			console.log("Failed to Retrieve "+activityName+" "+err);
+			logger.error("Failed to Retrieve "+activityName+" "+err);
+				
 			})
-			.catch(error => {
-				console.log("Request to Mobius Server is failed.");
-				console.log("Message = "+error);
-				//eturn error;
-				//resultData[0] = response.status;
-			});
 			
 		}
 			
@@ -573,6 +569,8 @@ if(loadingApp){
 			})
 		
 		}
+
+
 		
 		//console.log("Get Data From Config -->"+ appConfig.get('Test.Gretting')+" and "+appConfig.get('Test-2.Gretting'));
 		
