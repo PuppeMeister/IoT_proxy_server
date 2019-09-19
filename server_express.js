@@ -29,7 +29,9 @@ var conURL = [];
 var battURL = [];
 var warnURL = "";
 
-
+//MQTT
+var mqtt = "";
+var clientMqtt = "";
 
 try{
 
@@ -76,6 +78,12 @@ try{
 
 		//Warning
 		warnURL = appConfig.MobiusURL.warningAddress;
+
+		//MQTT URL
+		//var topicURL = appConfig.mqttUrl;
+		//console.log(topicURL);
+		//subcribeMqtt();
+
 	
 	//Flag for running the application
 	loadingApp = true;
@@ -83,6 +91,41 @@ try{
 }catch(e){
 	console.log("Application is failed to start. "+e);
 	logger.error("Application is failed to start. "+e);
+}
+
+function subcribeMqtt(){
+
+	var mqtt = require('mqtt')
+	//var mqttURL = "mqtt://223.195.37.170:1883/monitor/";
+	var mqttURL = 'mqtt://localhost:1883';
+	var clientMqtt  = mqtt.connect('mqtt://localhost:1883');
+	//var clientMqtt  = mqtt.connect('mqtt://test.mosquitto.org');
+	//var clientMqtt  = mqtt.connect(mqttURL);
+
+	clientMqtt.on('connect', function () {
+  	clientMqtt.subscribe('presence', function (err) {
+	
+		if (!err) {
+		//console.log("Successfully Subcribe! mqtt url ="+mqttURL);
+		try{
+			clientMqtt.publish('presence', 'Hello moto');
+			//setInterval(function(){clientMqtt.publish('presence','cricket');},3000);
+		}
+		catch(e){
+			console.log("Failed to publish "+e);
+		}
+    		}
+		  })
+		  
+		  clientMqtt.on('message', function (topic, message) {
+			// message is Buffer
+			/*if(message.toString().equals("")){
+				console.log("No Message!");
+			}*/
+			console.log("Get it!!!!!! "+message.toString())
+			clientMqtt.end()
+		  })
+	})
 }
 
 
@@ -97,7 +140,7 @@ if(loadingApp){
 		var getRequestedData = {
 			doWork : function (destinationUrl, res, activityName){
 		
-				console.log("Open Sesame - "+activityName);
+				console.log("It'is working through new function."+activityName);
 				logger.debug("Get "+activityName+ "Data");
 				console.log("URL = "+destinationUrl);
 				console.log("Activity Name = "+activityName);
@@ -133,6 +176,7 @@ if(loadingApp){
 		//Getting Device Information - Device Type from Mobius
 		app.get('/deviceInformation/deviceType', (req, res) => {
 			
+				console.log("Ini Na Response isinyo -> "+res.toString);
 	
 				//url: diURL['deviceType']
 				var worker = getRequestedData;
@@ -140,11 +184,11 @@ if(loadingApp){
 				
 				
 				try{
-					console.log("Run!! Run!!");
+					console.log("Getting Device Type.");
 					worker.doWork(diURL['deviceType'], res, "Device Type");
 				
 				}catch(e){
-					console.log("Failed to Get Data "+e);
+					console.log("Failed to Get Device Type "+e);
 				}
 				finally{
 					delete worker;
@@ -157,30 +201,21 @@ if(loadingApp){
 		//Getting Device Information - Device Name from Mobius
 		app.get('/deviceInformation/deviceName', (req, res) => {
 			
-			console.log("Open Sesame - Device Name");
-			// Setting URL and headers for request
-			var options = {
-				url: diURL['deviceName'],
-				headers : requestHeader
+			var worker = getRequestedData;
+			//getData : getResultFromMobius(diURL['deviceType'], res, "Device Type")
+		
+		
+				try{
+					console.log("Getting Device Name.");
+					worker.doWork(diURL['deviceName'], res, "Device Name");
 				
-			};
-			
-			var getData = getMobiusData(options);
-			
-			res = setReponseHeader(res);
-			
-			getData.then(function(result) {
-			
-			var sentResult = {"finalResult" : result['m2m:cin']['con']};
-			res.send(sentResult);
-			}, function(err) {
-			
-			res.statusCode = 404; 
-			res.send("{result : Failed Retriving}");
-			console.log(err);
-				
-			})	
-			
+				}catch(e){
+					console.log("Failed to Get Device Name "+e);
+				}
+				finally{
+					delete worker;
+					
+				}
 		
 			
 		});
@@ -188,95 +223,61 @@ if(loadingApp){
 		//Getting Device Information - Device Location from Mobius
 		app.get('/deviceInformation/deviceLocation', (req, res) => {
 			
-			console.log("Open Sesame - Device Location");
-			// Setting URL and headers for request
-			var options = {
-				url: dIURL['deviceLocation'],
-				headers : requestHeader
-				
-			};
-			
-			var getData = getMobiusData(options);
-			
-			res = setReponseHeader(res);
-			
-			getData.then(function(result) {
-			
-			var sentResult = {"finalResult" : result['m2m:cin']['con']};
-			res.send(sentResult);
+			var worker = getRequestedData;
+			//getData : getResultFromMobius(diURL['deviceType'], res, "Device Type")
 		
-			}, function(err) {
-			
-			res.statusCode = 404; 
-			res.send("{result : Failed Retriving}");
-			console.log(err);
-				
-			})	
-			
 		
-			
+				try{
+					console.log("Getting Device Location.");
+					worker.doWork(diURL['deviceLocation'], res, "Device Location");
+				
+				}catch(e){
+					console.log("Failed to Get Device Location "+e);
+				}
+				finally{
+					delete worker;
+					
+				}
+		
 		});
 		
 		//Getting Power Generation - amount per minute rom Mobius
 		app.get('/powerGeneration/amountPerMinute', (req, res) => {
-			
-			console.log("Open Sesame - Power Generation - amountPerMinute");
-			// Setting URL and headers for request
-			var options = {
-				url: pgURL['amountPerMinute'],
-				headers : requestHeader
-				
-			};
-			
-			var getData = getMobiusData(options);
-			
-			res = setReponseHeader(res);
-			
-			getData.then(function(result) {
-			
-			var sentResult = {"finalResult" : result['m2m:cin']['con']};
-			res.send(sentResult);
 		
-			}, function(err) {
-			
-			res.statusCode = 404; 
-			res.send("{result : Failed Retriving}");
-			console.log(err);
+			var worker = getRequestedData;
+					//getData : getResultFromMobius(diURL['deviceType'], res, "Device Type")
 				
-			})	
-			
-		
+				
+				try{
+					console.log("Getting Amount Per Minute.");
+					worker.doWork(pgURL['amountPerMinute'], res, "Amount Per Minute");
+				
+				}catch(e){
+					console.log("Failed to Get Amount Per Minute "+e);
+				}
+				finally{
+					delete worker;
+				}
 			
 		});
 		
 		//Getting Power Generation - Co2 Emissions rom Mobius
 		app.get('/powerGeneration/co2emissions', (req, res) => {
 			
-			console.log("Open Sesame - Power Generation - co2emissions");
-			// Setting URL and headers for request
-			var options = {
-				url: pgURL['co2emissions'],
-				headers : requestHeader
+			var worker = getRequestedData;
+					//getData : getResultFromMobius(diURL['deviceType'], res, "Device Type")
 				
-			};
-			
-			var getData = getMobiusData(options);
-			
-			res = setReponseHeader(res);
-			
-			getData.then(function(result) {
-			
-			var sentResult = {"finalResult" : result['m2m:cin']['con']};
-			res.send(sentResult);
-		
-			}, function(err) {
-			
-			res.statusCode = 404; 
-			res.send("{result : Failed Retriving}");
-			console.log(err);
 				
-			})	
-			
+				try{
+					console.log("Getting Co2 Emissions.");
+					worker.doWork(pgURL['co2emissions'], res, "Co2 Emissions");
+				
+				}catch(e){
+					console.log("Failed to Get Co2 Emissions "+e);
+				}
+				finally{
+					delete worker;	
+				}	
 		
 			
 		});
@@ -284,31 +285,20 @@ if(loadingApp){
 		//Getting Power Generation - power Generation Yesterday from Mobius
 		app.get('/powerGeneration/yesterday', (req, res) => {
 			
-			console.log("Open Sesame - Power Generation - Device Location");
-			// Setting URL and headers for request
-			var options = {
-				url: pgURL['powerGenerationYesterday'],
-				headers : requestHeader
+			var worker = getRequestedData;
+					//getData : getResultFromMobius(diURL['deviceType'], res, "Device Type")
 				
-			};
-			
-			var getData = getMobiusData(options);
-			
-			res = setReponseHeader(res);
-			
-			getData.then(function(result) {
-			
-			var sentResult = {"finalResult" : result['m2m:cin']['con']};
-			res.send(sentResult);
-		
-			}, function(err) {
-			
-			res.statusCode = 404; 
-			res.send("{result : Failed Retriving}");
-			console.log(err);
 				
-			})	
-			
+				try{
+					console.log("Getting Power Generation Yesterday.");
+					worker.doWork(pgURL['powerGenerationYesterday'], res, "Power Generation Yesterday");
+				
+				}catch(e){
+					console.log("Failed to Get Power Generation Yesterday "+e);
+				}
+				finally{
+					delete worker;	
+				}	
 		
 			
 		});
@@ -316,62 +306,40 @@ if(loadingApp){
 		//Getting Power Generation - power Generation Total from Mobius
 		app.get('/powerGeneration/total', (req, res) => {
 			
-			console.log("Open Sesame - Power Generation - total");
-			// Setting URL and headers for request
-			var options = {
-				url: pgURL['powerGenerationTotal'],
-				headers : requestHeader
+				var worker = getRequestedData;
+					//getData : getResultFromMobius(diURL['deviceType'], res, "Device Type")
 				
-			};
-			
-			var getData = getMobiusData(options);
-			
-			res = setReponseHeader(res);
-			
-			getData.then(function(result) {
-			
-			var sentResult = {"finalResult" : result['m2m:cin']['con']};
-			res.send(sentResult);
-		
-			}, function(err) {
-			
-			res.statusCode = 404; 
-			res.send("{result : Failed Retriving}");
-			console.log(err);
 				
-			})	
-			
-		
+				try{
+					console.log("Power Generation Total.");
+					worker.doWork(pgURL['powerGenerationTotal'], res, "Power Generation Total");
+				
+				}catch(e){
+					console.log("Failed to Get Power Generation Total "+e);
+				}
+				finally{
+					delete worker;			
+				}
 			
 		});
 		
 		//Getting Consumption Amount Per Minute
 		app.get('/consumption/amountPerMinute', (req, res) => {
 			
-			console.log("Open Sesame - Consumption - amountPerMinute");
-			// Setting URL and headers for request
-			var options = {
-				url: conURL['amountPerMinute'],
-				headers : requestHeader
+			var worker = getRequestedData;
+					//getData : getResultFromMobius(diURL['deviceType'], res, "Device Type")
 				
-			};
-			
-			var getData = getMobiusData(options);
-			
-			res = setReponseHeader(res);
-			
-			getData.then(function(result) {
-			
-			var sentResult = {"finalResult" : result['m2m:cin']['con']};
-			res.send(sentResult);
-		
-			}, function(err) {
-			
-			res.statusCode = 404; 
-			res.send("{result : Failed Retriving}");
-			console.log(err);
 				
-			})	
+				try{
+					console.log("Getting Amount Per Minute.");
+					worker.doWork(conURL['amountPerMinute'], res, "Amount Per Minute");
+				
+				}catch(e){
+					console.log("Failed to Get Amount Per Minute "+e);
+				}
+				finally{
+					delete worker;
+				}
 			
 		
 			
@@ -380,30 +348,20 @@ if(loadingApp){
 		//Getting Consumption Total
 		app.get('/consumption/total', (req, res) => {
 			
-			console.log("Open Sesame - Consumption - Total");
-			// Setting URL and headers for request
-			var options = {
-				url: conURL['consumptionTotal'],
-				headers : requestHeader
+			var worker = getRequestedData;
+					//getData : getResultFromMobius(diURL['deviceType'], res, "Device Type")
 				
-			};
-			
-			var getData = getMobiusData(options);
-			
-			res = setReponseHeader(res);
-			
-			getData.then(function(result) {
-			
-			var sentResult = {"finalResult" : result['m2m:cin']['con']};
-			res.send(sentResult);
-		
-			}, function(err) {
-			
-			res.statusCode = 404; 
-			res.send("{result : Failed Retriving}");
-			console.log(err);
 				
-			})	
+				try{
+					console.log("Getting Consumption Total.");
+					worker.doWork(conURL['consumptionTotal'], res, "Consumption Total");
+				
+				}catch(e){
+					console.log("Failed to Get Consumption Total "+e);
+				}
+				finally{
+					delete worker;
+				}	
 			
 		
 			
@@ -412,30 +370,20 @@ if(loadingApp){
 		//Getting Consumption Amount Yesterday
 		app.get('/consumption/yesterday', (req, res) => {
 			
-			console.log("Open Sesame - Consumption - yesterday");
-			// Setting URL and headers for request
-			var options = {
-				url: conURL['consumptionYesterday'],
-				headers : requestHeader
+			var worker = getRequestedData;
+					//getData : getResultFromMobius(diURL['deviceType'], res, "Device Type")
 				
-			};
-			
-			var getData = getMobiusData(options);
-			
-			res = setReponseHeader(res);
-			
-			getData.then(function(result) {
-			
-			var sentResult = {"finalResult" : result['m2m:cin']['con']};
-			res.send(sentResult);
-		
-			}, function(err) {
-			
-			res.statusCode = 404; 
-			res.send("{result : Failed Retriving}");
-			console.log(err);
 				
-			})	
+				try{
+					console.log("Getting Consumption Yesterday.");
+					worker.doWork(conURL['consumptionYesterday'], res, "Consumption Yesterday");
+				
+				}catch(e){
+					console.log("Failed to Get Consumption Yesterday"+e);
+				}
+				finally{
+					delete worker;
+				}	
 			
 		
 			
@@ -444,63 +392,40 @@ if(loadingApp){
 		//Getting battery current amount
 		app.get('/battery/currentAmount', (req, res) => {
 			
-			console.log("Open Sesame - Battery - Current Amount");
-			// Setting URL and headers for request
-			var options = {
-				url: battURL['currentAmount'],
-				headers : requestHeader
+			var worker = getRequestedData;
+					//getData : getResultFromMobius(diURL['deviceType'], res, "Device Type")
 				
-			};
-			
-			var getData = getMobiusData(options);
-			
-			res = setReponseHeader(res);
-			
-			getData.then(function(result) {
-			
-			var sentResult = {"finalResult" : result['m2m:cin']['con']};
-			res.send(sentResult);
-		
-			}, function(err) {
-			
-			res.statusCode = 404; 
-			res.send("{result : Failed Retriving}");
-			console.log(err);
 				
-			})	
-			
-		
+				try{
+					console.log("Getting Battery Current Amount.");
+					worker.doWork(battURL['currentAmount'], res, "Battery Current Amount");
+				
+				}catch(e){
+					console.log("Failed to Get Battery Current Amount"+e);
+				}
+				finally{
+					delete worker;
+				}
 			
 		});
 		
 		//Getting Battery Max Amount
 		app.get('/battery/maxAmount', (req, res) => {
 			
-			console.log("Open Sesame - Battery - Max Amount");
-			// Setting URL and headers for request
-			var options = {
-				url: battURL['maxAmount'],
-				headers : requestHeader
+			var worker = getRequestedData;
+					//getData : getResultFromMobius(diURL['deviceType'], res, "Device Type")
 				
-			};
-			
-			var getData = getMobiusData(options);
-			
-			res = setReponseHeader(res);
-			
-			getData.then(function(result) {
-			
-			var sentResult = {"finalResult" : result['m2m:cin']['con']};
-			res.send(sentResult);
-		
-			}, function(err) {
-			
-			res.statusCode = 404; 
-			res.send("{result : Failed Retriving}");
-			console.log(err);
 				
-			})	
-			
+				try{
+					console.log("Getting Battery Max Amount.");
+					worker.doWork(battURL['maxAmount'], res, "maxAmount");
+				
+				}catch(e){
+					console.log("Failed to Get Battery Max Amount"+e);
+				}
+				finally{
+					delete worker;
+				}
 		
 			
 		});
@@ -508,30 +433,20 @@ if(loadingApp){
 		//Getting Warning 
 		app.get('/warning', (req, res) => {
 			
-			console.log("Open Sesame - Warning");
-			// Setting URL and headers for request
-			var options = {
-				url: warnURL,
-				headers : requestHeader
+			var worker = getRequestedData;
+					//getData : getResultFromMobius(diURL['deviceType'], res, "Device Type")
 				
-			};
-			
-			var getData = getMobiusData(options);
-			
-			res = setReponseHeader(res);
-			
-			getData.then(function(result) {
-			
-			var sentResult = {"finalResult" : result['m2m:cin']['con']};
-			res.send(sentResult);
-		
-			}, function(err) {
-			
-			res.statusCode = 404; 
-			res.send("{result : Failed Retriving}");
-			console.log(err);
 				
-			})	
+				try{
+					console.log("Getting Warning.");
+					worker.doWork(warnURL, res, "Warning");
+				
+				}catch(e){
+					console.log("Failed to Get Warning"+e);
+				}
+				finally{
+					delete worker;
+				}
 			
 		
 			
@@ -595,11 +510,12 @@ if(loadingApp){
 		
 		}
 
-
-		
 		//console.log("Get Data From Config -->"+ appConfig.get('Test.Gretting')+" and "+appConfig.get('Test-2.Gretting'));
-		
-		app.listen(port, () => console.log('Gator app listening on port 19998! and with POST listening'));
+
+		//MQTT Part
+
+
+		app.listen(port, () => console.log('This app is listening on port 19998! and with POST listening'));
 }
 
 
