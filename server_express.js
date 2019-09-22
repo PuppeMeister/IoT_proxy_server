@@ -33,12 +33,16 @@ var warnURL = "";
 var mqtt = "";
 var clientMqtt = "";
 
+//Socket.io
+var io = "";
+
 try{
 
 	appConfig = require('./config/app_config.js');
 	express = require('express');
 	bodyParser = require('body-parser');
-	
+	io = require('socket.io')(80);
+
 	//PORT
 	port = appConfig.port;
 
@@ -57,27 +61,27 @@ try{
 
 		//URLs
 		//Device Information
-		diURL['deviceType'] = appConfig.MobiusURL.deviceInformation.deviceType;
+		/*diURL['deviceType'] = appConfig.MobiusURL.deviceInformation.deviceType;
 		diURL['deviceName'] = appConfig.MobiusURL.deviceInformation.deviceName;
-		diURL['deviceLocation'] = appConfig.MobiusURL.deviceInformation.deviceLocation;
+		diURL['deviceLocation'] = appConfig.MobiusURL.devic0eInformation.deviceLocation;*/
 
 		//Power Generation
-		pgURL['amountPerMinute'] = appConfig.MobiusURL.powerGeneration.amountPerMinute;
+		/*pgURL['amountPerMinute'] = appConfig.MobiusURL.powerGeneration.amountPerMinute;
 		pgURL['co2emissions'] =  appConfig.MobiusURL.powerGeneration.co2emissions;
 		pgURL['powerGenerationYesterday'] =  appConfig.MobiusURL.powerGeneration.powerGenerationYesterday;
-		pgURL['powerGenerationTotal'] =  appConfig.MobiusURL.powerGeneration.powerGenerationTotal;
+		pgURL['powerGenerationTotal'] =  appConfig.MobiusURL.powerGeneration.powerGenerationTotal;*/
 
 		//Consumption
-		conURL['amountPerMinute'] = appConfig.MobiusURL.consumption.amountPerMinute;
+		/*conURL['amountPerMinute'] = appConfig.MobiusURL.consumption.amountPerMinute;
 		conURL['consumptionTotal'] = appConfig.MobiusURL.consumption.consumptionTotal;
-		conURL['consumptionYesterday'] = appConfig.MobiusURL.consumption.consumptionYesterday;
+		conURL['consumptionYesterday'] = appConfig.MobiusURL.consumption.consumptionYesterday;*/
 
 		//Battery
-		battURL['currentAmount'] = appConfig.MobiusURL.battery.currentAmount;
-		battURL['maxAmount'] = appConfig.MobiusURL.battery.maxAmount;
+		/*battURL['currentAmount'] = appConfig.MobiusURL.battery.currentAmount;
+		battURL['maxAmount'] = appConfig.MobiusURL.battery.maxAmount;*/
 
 		//Warning
-		warnURL = appConfig.MobiusURL.warningAddress;
+		//warnURL = appConfig.MobiusURL.warningAddress;
 
 		//MQTT URL
 		//var topicURL = appConfig.mqttUrl;
@@ -128,34 +132,58 @@ function subcribeMqtt(){
 	})
 }
 
-
-
 if(loadingApp){
 
 		const util = require('util');
 		var app = express();
 		app.use(bodyParser.urlencoded({ extended: false }));
 		app.use(bodyParser.json())
-	
-		var getRequestedData = {
-			doWork : function (destinationUrl, res, activityName){
+
+		var eventName = ["sendSolarData", "sendBatteryData","sendLoadData"];
+		var channelName = ["/solar", "/battery","/load"];
+
 		
-				console.log("It'is working through new function."+activityName);
-				logger.debug("Get "+activityName+ "Data");
-				console.log("URL = "+destinationUrl);
-				console.log("Activity Name = "+activityName);
+	
+		/*var deviceLocation = io.of('/deviceLocation').on('connection', function(socket){
+			socket.emit('sendDeviceLocation', 'my device location');	
+		});
+
+		var deviceType = io.of('/deviceType').on('connection', function(socket){
+			socket.emit('sendDeviceType', 'my device type');	
+		});*/
+
+		var getRequestedData = {
+			doWork : function (req, res, activityName, eventName, channelName){	
 				
-				// Setting URL and headers for request
-				var options = {
-					url: destinationUrl,
-					headers : requestHeader
-					
-				};
-				
-				var getData = getMobiusData(options);
 				res = setReponseHeader(res);
+				res.statusCode = 200 ; 
+				res.send("Successful");
 				
-				getData.then(function(result) {
+				var data = JSON.parse(req);
+				//var data = JSON.stringify(req.body);
+				console.log("Data here -->"+ data.body);
+				//console.log("Data here too -->"+ data.m2m:sgn);
+
+				//logger.debug("Retrieve "+activityName+ "Data Body = " +req.body.Body);
+				//logger.debug("Retrieve "+activityName+ "Data = " +req.bodyParser);
+
+				//console.log("Retrieve "+activityName+ "Data Header = " +req.headers);
+				//console.log("Retrieve here here "+activityName+ "Data = "+JSON.stringify(req));
+				
+
+				//console.log("---> "+util.inspect(req, false, null));
+				//var getData = getMobiusData(options);
+				
+				
+				/*var pusher = io.of(channelName).on('connection', function(socket){
+					console.log("Push to Client!");
+					socket.emit(eventName, data);	
+				});	*/
+
+
+				
+
+				/*getData.then(function(result) {
 				
 					var sentResult = {"finalResult" : result['m2m:cin']['con']};
 					res.send(sentResult);
@@ -167,16 +195,16 @@ if(loadingApp){
 				
 				console.log("Failed to Retrieve "+activityName+" "+err);
 				logger.error("Failed to Retrieve "+activityName+" "+err);
-					
-				})
+				})*/
 				
 			}
 		};
 
-		//Getting Device Information - Device Type from Mobius
-		app.get('/deviceInformation/deviceType', (req, res) => {
+		app.post('/solar', (req, res) => {
 			
-				console.log("Ini Na Response isinyo -> "+res.toString);
+			console.log("Ini Post toString -> "+req.toString());
+			console.log("Ini Post Body -> "+req.body);
+			//console.log("JSON? -> "+JSON.parse(req.body));
 	
 				//url: diURL['deviceType']
 				var worker = getRequestedData;
@@ -184,11 +212,11 @@ if(loadingApp){
 				
 				
 				try{
-					console.log("Getting Device Type.");
-					worker.doWork(diURL['deviceType'], res, "Device Type");
+					console.log("Push Solar Data.");
+					worker.doWork(req, res, "Solar", eventName[0], channelName[0]);
 				
 				}catch(e){
-					console.log("Failed to Get Device Type "+e);
+					console.log("Failed to Retrieve and to Push Solar Data"+e);
 				}
 				finally{
 					delete worker;
@@ -198,259 +226,50 @@ if(loadingApp){
 			
 		});
 		
-		//Getting Device Information - Device Name from Mobius
-		app.get('/deviceInformation/deviceName', (req, res) => {
+		app.post('/battery', (req, res) => {
+			
+			console.log("Ini Post toString -> "+req.toString());
+			console.log("Ini Post Body -> "+req.body);
+			//console.log("JSON? -> "+JSON.parse(req.body));
 			
 			var worker = getRequestedData;
-			//getData : getResultFromMobius(diURL['deviceType'], res, "Device Type")
-		
-		
-				try{
-					console.log("Getting Device Name.");
-					worker.doWork(diURL['deviceName'], res, "Device Name");
+			
+			try{
+				console.log("Push Battery Data.");
+				worker.doWork(req, res, "Battery", eventName[1], channelName[1]);
+			
+			}catch(e){
+				console.log("Failed to Retrieve and to Push Battery Data"+e);
+			}
+			finally{
+				delete worker;
 				
-				}catch(e){
-					console.log("Failed to Get Device Name "+e);
-				}
-				finally{
-					delete worker;
-					
-				}
+			}
 		
-			
 		});
-		
-		//Getting Device Information - Device Location from Mobius
-		app.get('/deviceInformation/deviceLocation', (req, res) => {
+
+		app.post('/load', (req, res) => {
 			
+			console.log("Ini Post toString -> "+JSON.stringify(req.body));
+			//console.log("JSON? -> "+JSON.parse(req.body));
+
 			var worker = getRequestedData;
-			//getData : getResultFromMobius(diURL['deviceType'], res, "Device Type")
-		
-		
-				try{
-					console.log("Getting Device Location.");
-					worker.doWork(diURL['deviceLocation'], res, "Device Location");
+			
+			try{
+				console.log("Push Load Data.");
+				worker.doWork(req, res, "Load", eventName[2], channelName[2]);
+			
+			}catch(e){
+				console.log("Failed to Retrieve and to Push Load Data"+e);
+			}
+			finally{
+				delete worker;
 				
-				}catch(e){
-					console.log("Failed to Get Device Location "+e);
-				}
-				finally{
-					delete worker;
-					
-				}
-		
+			}
+	
 		});
 		
-		//Getting Power Generation - amount per minute rom Mobius
-		app.get('/powerGeneration/amountPerMinute', (req, res) => {
 		
-			var worker = getRequestedData;
-					//getData : getResultFromMobius(diURL['deviceType'], res, "Device Type")
-				
-				
-				try{
-					console.log("Getting Amount Per Minute.");
-					worker.doWork(pgURL['amountPerMinute'], res, "Amount Per Minute");
-				
-				}catch(e){
-					console.log("Failed to Get Amount Per Minute "+e);
-				}
-				finally{
-					delete worker;
-				}
-			
-		});
-		
-		//Getting Power Generation - Co2 Emissions rom Mobius
-		app.get('/powerGeneration/co2emissions', (req, res) => {
-			
-			var worker = getRequestedData;
-					//getData : getResultFromMobius(diURL['deviceType'], res, "Device Type")
-				
-				
-				try{
-					console.log("Getting Co2 Emissions.");
-					worker.doWork(pgURL['co2emissions'], res, "Co2 Emissions");
-				
-				}catch(e){
-					console.log("Failed to Get Co2 Emissions "+e);
-				}
-				finally{
-					delete worker;	
-				}	
-		
-			
-		});
-		
-		//Getting Power Generation - power Generation Yesterday from Mobius
-		app.get('/powerGeneration/yesterday', (req, res) => {
-			
-			var worker = getRequestedData;
-					//getData : getResultFromMobius(diURL['deviceType'], res, "Device Type")
-				
-				
-				try{
-					console.log("Getting Power Generation Yesterday.");
-					worker.doWork(pgURL['powerGenerationYesterday'], res, "Power Generation Yesterday");
-				
-				}catch(e){
-					console.log("Failed to Get Power Generation Yesterday "+e);
-				}
-				finally{
-					delete worker;	
-				}	
-		
-			
-		});
-		
-		//Getting Power Generation - power Generation Total from Mobius
-		app.get('/powerGeneration/total', (req, res) => {
-			
-				var worker = getRequestedData;
-					//getData : getResultFromMobius(diURL['deviceType'], res, "Device Type")
-				
-				
-				try{
-					console.log("Power Generation Total.");
-					worker.doWork(pgURL['powerGenerationTotal'], res, "Power Generation Total");
-				
-				}catch(e){
-					console.log("Failed to Get Power Generation Total "+e);
-				}
-				finally{
-					delete worker;			
-				}
-			
-		});
-		
-		//Getting Consumption Amount Per Minute
-		app.get('/consumption/amountPerMinute', (req, res) => {
-			
-			var worker = getRequestedData;
-					//getData : getResultFromMobius(diURL['deviceType'], res, "Device Type")
-				
-				
-				try{
-					console.log("Getting Amount Per Minute.");
-					worker.doWork(conURL['amountPerMinute'], res, "Amount Per Minute");
-				
-				}catch(e){
-					console.log("Failed to Get Amount Per Minute "+e);
-				}
-				finally{
-					delete worker;
-				}
-			
-		
-			
-		});
-		
-		//Getting Consumption Total
-		app.get('/consumption/total', (req, res) => {
-			
-			var worker = getRequestedData;
-					//getData : getResultFromMobius(diURL['deviceType'], res, "Device Type")
-				
-				
-				try{
-					console.log("Getting Consumption Total.");
-					worker.doWork(conURL['consumptionTotal'], res, "Consumption Total");
-				
-				}catch(e){
-					console.log("Failed to Get Consumption Total "+e);
-				}
-				finally{
-					delete worker;
-				}	
-			
-		
-			
-		});
-		
-		//Getting Consumption Amount Yesterday
-		app.get('/consumption/yesterday', (req, res) => {
-			
-			var worker = getRequestedData;
-					//getData : getResultFromMobius(diURL['deviceType'], res, "Device Type")
-				
-				
-				try{
-					console.log("Getting Consumption Yesterday.");
-					worker.doWork(conURL['consumptionYesterday'], res, "Consumption Yesterday");
-				
-				}catch(e){
-					console.log("Failed to Get Consumption Yesterday"+e);
-				}
-				finally{
-					delete worker;
-				}	
-			
-		
-			
-		});
-		
-		//Getting battery current amount
-		app.get('/battery/currentAmount', (req, res) => {
-			
-			var worker = getRequestedData;
-					//getData : getResultFromMobius(diURL['deviceType'], res, "Device Type")
-				
-				
-				try{
-					console.log("Getting Battery Current Amount.");
-					worker.doWork(battURL['currentAmount'], res, "Battery Current Amount");
-				
-				}catch(e){
-					console.log("Failed to Get Battery Current Amount"+e);
-				}
-				finally{
-					delete worker;
-				}
-			
-		});
-		
-		//Getting Battery Max Amount
-		app.get('/battery/maxAmount', (req, res) => {
-			
-			var worker = getRequestedData;
-					//getData : getResultFromMobius(diURL['deviceType'], res, "Device Type")
-				
-				
-				try{
-					console.log("Getting Battery Max Amount.");
-					worker.doWork(battURL['maxAmount'], res, "maxAmount");
-				
-				}catch(e){
-					console.log("Failed to Get Battery Max Amount"+e);
-				}
-				finally{
-					delete worker;
-				}
-		
-			
-		});
-		
-		//Getting Warning 
-		app.get('/warning', (req, res) => {
-			
-			var worker = getRequestedData;
-					//getData : getResultFromMobius(diURL['deviceType'], res, "Device Type")
-				
-				
-				try{
-					console.log("Getting Warning.");
-					worker.doWork(warnURL, res, "Warning");
-				
-				}catch(e){
-					console.log("Failed to Get Warning"+e);
-				}
-				finally{
-					delete worker;
-				}
-			
-		
-			
-		});
 		
 		function setReponseHeader(res){
 			
@@ -459,6 +278,7 @@ if(loadingApp){
 			res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
 			
 			return res;
+		
 		}	
 		
 		
