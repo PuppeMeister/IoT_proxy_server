@@ -106,14 +106,14 @@ if(loadingApp){
 		app.use(bodyParser.urlencoded({ extended: false }));
 		app.use(bodyParser.json());
 
-		var solarEventEntityName = ["current", "voltage","power"];
-		var solarChannelName = ["/solarCurrent", "/solarVoltage","/solarPower"];
+		var solarEventEntityName = ["current", "voltage","power", "daily", "monthly", "annual", "total"];
+		var solarChannelName = ["/solarCurrent", "/solarVoltage","/solarPower", "/solarDaily", "/solarMonthly", "/solarAnnual", "solarTotal"];
 
 		var batteryEventEntityName = ["level", "current","voltage", "power", "charging", "discharging"];
 		var batteryChannelName = ["/battLevel", "/battCurrent","/battVoltage","/battPower", "/battCharging", "/battDischarging"];
 
-		var loadEventEntityName = ["inCurrent", "inVoltage","inPower"];
-		var loadChannelName = ["/loadCurrent", "/loadVoltage","/loadPower"];
+		var loadEventEntityName = ["inCurrent", "inVoltage","inPower", "inDaily", "inMonthly", "inAnnual", "inTotal"];
+		var loadChannelName = ["/loadCurrent", "/loadVoltage","/loadPower", "/loadDaily", "/loadMonthly", "/loadAnnual", "loadTotal"];
 
 		
 	
