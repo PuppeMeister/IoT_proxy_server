@@ -2,6 +2,7 @@
 
 var express = "";
 var bodyParser = "";
+var cors = "";
 
 //Prepare For Logging
 
@@ -40,53 +41,31 @@ try{
 
 	appConfig = require('./config/app_config.js');
 	express = require('express');
+	cors = require('cors');
 	bodyParser = require('body-parser');
+	//io = require('socket.io')(19997,{ origins: '*:*'});
 	io = require('socket.io')(19997);
 
 	//PORT
 	port = appConfig.port;
 
-	//requestHeader
-	//console.log("Value From appConfig.requestHeader.Accept = "+appConfig.requestHeader.Accept);
-	//console.log("Value From appConfig.requestHeader.X-M2M-RI = "+appConfig.requestHeader.XM2MRI);
-	//console.log("Value From appConfig.requestHeader.X-M2M-Origin = "+appConfig.requestHeader.XM2MOrigin);
-	
-	requestHeader = {
+	/*requestHeader = {
 		"header" : {
-			"Accept" : appConfig.requestHeader.Accept,
-			"X-M2M-RI" : appConfig.requestHeader.XM2MRI,
-			"X-M2M-Origin" : appConfig.requestHeader.XM2MOrigin	
+			"Accept" : "application/json",
+			"X-M2M-RI" : "dashboard",
+			"X-M2M-Origin" : "admin:admin",
+			"Content-Type" : "application/json;ty=28"
 		}
-	}
+	}*/
 
-		//URLs
-		//Device Information
-		/*diURL['deviceType'] = appConfig.MobiusURL.deviceInformation.deviceType;
-		diURL['deviceName'] = appConfig.MobiusURL.deviceInformation.deviceName;
-		diURL['deviceLocation'] = appConfig.MobiusURL.devic0eInformation.deviceLocation;*/
-
-		//Power Generation
-		/*pgURL['amountPerMinute'] = appConfig.MobiusURL.powerGeneration.amountPerMinute;
-		pgURL['co2emissions'] =  appConfig.MobiusURL.powerGeneration.co2emissions;
-		pgURL['powerGenerationYesterday'] =  appConfig.MobiusURL.powerGeneration.powerGenerationYesterday;
-		pgURL['powerGenerationTotal'] =  appConfig.MobiusURL.powerGeneration.powerGenerationTotal;*/
-
-		//Consumption
-		/*conURL['amountPerMinute'] = appConfig.MobiusURL.consumption.amountPerMinute;
-		conURL['consumptionTotal'] = appConfig.MobiusURL.consumption.consumptionTotal;
-		conURL['consumptionYesterday'] = appConfig.MobiusURL.consumption.consumptionYesterday;*/
-
-		//Battery
-		/*battURL['currentAmount'] = appConfig.MobiusURL.battery.currentAmount;
-		battURL['maxAmount'] = appConfig.MobiusURL.battery.maxAmount;*/
-
-		//Warning
-		//warnURL = appConfig.MobiusURL.warningAddress;
-
-		//MQTT URL
-		//var topicURL = appConfig.mqttUrl;
-		//console.log(topicURL);
-		//subcribeMqtt();
+	requestHeader = {
+		
+			"Accept" : "application/json",
+			"X-M2M-RI" : "dashboard",
+			"X-M2M-Origin" : "admin:admin",
+			"Content-Type" : "application/json;ty=28"
+		
+	};
 
 	
 	//Flag for running the application
@@ -105,62 +84,96 @@ if(loadingApp){
 		var app = express();
 		app.use(bodyParser.urlencoded({ extended: false }));
 		app.use(bodyParser.json());
-
-		var solarEventEntityName = ["current", "voltage","power", "daily", "monthly", "annual", "total"];
-		var solarChannelName = ["/solarCurrent", "/solarVoltage","/solarPower", "/solarDaily", "/solarMonthly", "/solarAnnual", "solarTotal"];
-
-		var batteryEventEntityName = ["level", "current","voltage", "power", "charging", "discharging"];
-		var batteryChannelName = ["/battLevel", "/battCurrent","/battVoltage","/battPower", "/battCharging", "/battDischarging"];
-
-		var loadEventEntityName = ["inCurrent", "inVoltage","inPower", "inDaily", "inMonthly", "inAnnual", "inTotal"];
-		var loadChannelName = ["/loadCurrent", "/loadVoltage","/loadPower", "/loadDaily", "/loadMonthly", "/loadAnnual", "loadTotal"];
-
-		
+		app.use(cors());
 	
-		/*var deviceLocation = io.of('/deviceLocation').on('connection', function(socket){
-			socket.emit('sendDeviceLocation', 'my device location');	
-		});
+		
 
-		var deviceType = io.of('/deviceType').on('connection', function(socket){
-			socket.emit('sendDeviceType', 'my device type');	
-		});*/
+		var solarEntityName = ["current", "voltage","power", "daily", "monthly", "annual", "total"];
+		var solarEventName = ["solarCurrent", "solarVoltage","solarPower", "solarDaily", "solarMonthly", "solarAnnual", "solarTotal"];
+
+		var batteryEntityName = ["level", "current","voltage", "power"];
+		var batteryEventName = ["battLevel", "battCurrent","battVoltage","battPower"];
+
+		var battChargeEntity = ["charging", "discharging"];
+		var battChargeEvent = ["charging", "discharging"];
+
+		var loadEntityName = ["current", "voltage","power", "daily", "monthly", "annual", "total"];
+		var loadEventName = ["loadCurrent", "loadVoltage","loadPower", "loadDaily", "loadMonthly", "loadAnnual", "loadTotal"];
+
 
 		var getRequestedData = {
-			doWork : function (req, res, activityName, eeName, channelName){	
+				doWork : function (req, res, activityName, entityName, eventName)	{
 				
 				res = setReponseHeader(res);
 				res.statusCode = 200 ; 
 				res.send("Successful");
-				
-				for(i=0; i<eeName.length; i++){
 
-					var sentData = req.body['m2m:sgn']['m2m:nev']['m2m:rep']['m2m:fcnt'][eeName[i]];
+				//var sentData = req.body['m2m:sgn']['m2m:nev']['m2m:rep']['m2m:fcnt']['current'];
+				
+				//io.of(channelName).on('connection', function(socket){
+				/*io.on('connection', function(socket){	
+					console.log("Send!");
+					socket.emit('incomingData', sentData);	
+				});*/
+				
+
+				for(i=0; i<entityName.length; i++){
+
+					var sentData = req.body['m2m:sgn']['m2m:nev']['m2m:rep']['m2m:fcnt'][entityName[i]];
+					io.sockets.emit(eventName[i], sentData);
+					console.log(activityName + " retrieved data = "+entityName[i]+" || "+sentData+" || Event Name = "+eventName[i]);
 					
-					console.log(activityName + "retrieved data = "+eeName[i]+" || "+sentData);
 					
-					var pusher = io.of(channelName[i]).on('connection', function(socket){
-						//console.log("Push to Client!");
-						socket.emit(eventName, sentData);	
-					});
-	
 				}
 				
 			}
 		};
 
+		var pushCommandToServer = {
+			doWork : function (sentData)	{
+				
+				const request = require("request");
+				console.log("Push to server, data --> "+sentData);
+		
+				/*request.put('http://192.168.0.21:8080/~/in-cse/fcnt-548319540', {sentData}, requestHeader
+					, (error, res, body) => {
+							if (error) {
+								console.error(error);
+								
+							}
+							console.log("heree");
+							console.log("statusCode: "+res.statusCode);
+							console.log(body);
+					})*/
+					var data = JSON.parse(sentData);
+					request({
+						method: "PUT",
+						uri: 'http://192.168.0.21:8080/~/in-cse/fcnt-548319540',
+						headers: requestHeader,
+						json: data
+					},
+					function(error, request, body){
+						var status = request.statusCode;
+						console.log("Here --> "+error+" || "+status);
+						console.log(body);
+					 });
+			
+			}
+		};
+
 		app.post('/solar', (req, res) => {
+
 			
 			console.log("Incoming Solar Data = "+JSON.stringify(req.body));
 
 				var worker = getRequestedData;
-			
 				
 				try{
 					console.log("Push Solar Data.");
-					worker.doWork(req, res, "Solar", solarEventName, solarchannelName);
+					worker.doWork(req, res, "Solar", solarEntityName, solarEventName);
 				
 				}catch(e){
-					console.log("Failed to Retrieve and to Push Solar Data" +e);
+					console.log("Failed to Retrieve and to Push Solar Data " +e);
 				}
 				finally{
 					delete worker;
@@ -171,6 +184,7 @@ if(loadingApp){
 		});
 		
 		app.post('/battery', (req, res) => {
+
 			
 			console.log("Incoming Battery Data = "+JSON.stringify(req.body));
 			
@@ -178,10 +192,18 @@ if(loadingApp){
 			
 			try{
 				console.log("Push Battery Data.");
-				worker.doWork(req, res, "Battery", batteryEventEntityName, batteryChannelName);
-			
+				var sampleCharging = req.body['m2m:sgn']['m2m:nev']['m2m:rep']['m2m:fcnt']['charging'];
+				
+				if(sampleCharging == undefined){
+					worker.doWork(req, res, "Battery", batteryEntityName, batteryEventName);
+				}
+				else{
+					console.log("Push Charging and Discharging Status");
+					//worker.doWork(req, res, "Battery", battChargeEntity,  battChargeEvent);
+				}
+				
 			}catch(e){
-				console.log("Failed to Retrieve and to Push Battery Data"+e);
+				console.log("Failed to Retrieve and to Push Battery Data "+e);
 			}
 			finally{
 				delete worker;
@@ -198,10 +220,10 @@ if(loadingApp){
 			
 			try{
 				console.log("Push Load Data.");
-				worker.doWork(req, res, "Load", loadEventEntityName, loadChannelName);
+				worker.doWork(req, res, "Load", loadEntityName, loadEventName);
 			
 			}catch(e){
-				console.log("Failed to Retrieve and to Push Load Data"+e);
+				console.log("Failed to Retrieve and to Push Load Data "+e);
 			}
 			finally{
 				delete worker;
@@ -209,8 +231,64 @@ if(loadingApp){
 			}
 	
 		});
-		
-		
+
+		app.post('/charging', (req, res) => {
+			
+			console.log("Charging Command "+ req.body['command']);
+
+			res = setReponseHeader(res);
+			res.statusCode = 200 ; 
+			res.send("Successful");
+
+			var worker = pushCommandToServer;
+			var sentData = '{ "m2m:fcnt" : { "charging" : 1 } }';
+
+			if(req.body['command']== "0"){
+				sentData = '{ "m2m:fcnt" : { "charging" : 0 } }';	
+			}
+			
+			try{
+				console.log("Push Charging Command to Server.");
+				worker.doWork(sentData);
+			
+			}catch(e){
+				console.log("Failed Push Charging Command to Server "+e);
+			}
+			finally{
+				delete worker;
+				
+			}
+	
+		});
+
+		app.post('/discharging', (req, res) => {
+			
+			console.log("Discharging Command "+ req.body['command']);
+			
+			res = setReponseHeader(res);
+			res.statusCode = 200 ; 
+			res.send("Successful");
+
+			var worker = pushCommandToServer;
+			var sentData = '{ "m2m:fcnt" : { "discharging" : 1 } }';
+
+			if(req.body['command']== "0"){
+				sentData = '{ "m2m:fcnt" : { "discharging" : 0 } }';	
+			}
+			
+			try{
+				console.log("Push Discharging Command to Server.");
+				worker.doWork(sentData);
+			
+			}catch(e){
+				console.log("Failed Push Discharging Command to Server "+e);
+			}
+			finally{
+				delete worker;
+				
+			}
+	
+		});
 		
 		function setReponseHeader(res){
 			
@@ -221,39 +299,7 @@ if(loadingApp){
 			return res;
 		
 		}	
-		
-		
-		
-		function getResultFromMobius(destinationUrl, res, activityName){
-		
-			console.log("Open Sesame - "+activityName);
-			logger.debug("Get "+activityName+ "Data");
-			
-			// Setting URL and headers for request
-			var options = {
-				url: destinationUrl,
-				headers : requestHeader
-				
-			};
-			
-			var getData = getMobiusData(options);
-			res = setReponseHeader(res);
-			getData.then(function(result) {
-			
-			var sentResult = {"finalResult" : result['m2m:cin']['con']};
-			res.send(sentResult);
-		
-			}, function(err) {
-			
-			res.statusCode = 404; 
-			res.send("{result : Failed Retriving}");
-			
-			console.log("Failed to Retrieve "+activityName+" "+err);
-			logger.error("Failed to Retrieve "+activityName+" "+err);
-				
-			})
-			
-		}
+
 			
 		function getMobiusData(options) {
 			const request = require("request");
@@ -270,10 +316,6 @@ if(loadingApp){
 			})
 		
 		}
-
-		//console.log("Get Data From Config -->"+ appConfig.get('Test.Gretting')+" and "+appConfig.get('Test-2.Gretting'));
-
-		//MQTT Part
 
 
 		app.listen(port, () => console.log('This app is listening on port 19998! and with POST listening and web socket is on port 19997!'));
