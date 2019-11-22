@@ -43,20 +43,12 @@ try{
 	express = require('express');
 	cors = require('cors');
 	bodyParser = require('body-parser');
-	//io = require('socket.io')(19997,{ origins: '*:*'});
+	
 	io = require('socket.io')(19997);
 
 	//PORT
 	port = appConfig.port;
 
-	/*requestHeader = {
-		"header" : {
-			"Accept" : "application/json",
-			"X-M2M-RI" : "dashboard",
-			"X-M2M-Origin" : "admin:admin",
-			"Content-Type" : "application/json;ty=28"
-		}
-	}*/
 
 	requestHeader = {
 		
@@ -85,8 +77,6 @@ if(loadingApp){
 		app.use(bodyParser.urlencoded({ extended: false }));
 		app.use(bodyParser.json());
 		app.use(cors());
-	
-		
 
 		var solarEntityName = ["current", "voltage","power", "daily", "monthly", "annual", "total"];
 		var solarEventName = ["solarCurrent", "solarVoltage","solarPower", "solarDaily", "solarMonthly", "solarAnnual", "solarTotal"];
@@ -94,20 +84,12 @@ if(loadingApp){
 		var batteryEntityName = ["level", "current","voltage", "power"];
 		var batteryEventName = ["battLevel", "battCurrent","battVoltage","battPower"];
 
-		var battChargeEntity = ["charging", "discharging"];
-		var battChargeEvent = ["charging", "discharging"];
-
 		var loadEntityName = ["current", "voltage","power", "daily", "monthly", "annual", "total"];
 		var loadEventName = ["loadCurrent", "loadVoltage","loadPower", "loadDaily", "loadMonthly", "loadAnnual", "loadTotal"];
 
-
 		var getRequestedData = {
-				doWork : function (req, res, activityName, entityName, eventName)	{
+				doWork : function (req, res, activityName, entityName, eventName, time, eventTime)	{
 				
-				res = setReponseHeader(res);
-				res.statusCode = 200 ; 
-				res.send("Successful");
-
 				//var sentData = req.body['m2m:sgn']['m2m:nev']['m2m:rep']['m2m:fcnt']['current'];
 				
 				//io.of(channelName).on('connection', function(socket){
@@ -115,36 +97,41 @@ if(loadingApp){
 					console.log("Send!");
 					socket.emit('incomingData', sentData);	
 				});*/
+				//	//{"m2m:sgn":{"m2m:vrq":true,"m2m:sud":false}
+				var sampleCharging = req.body['m2m:sgn']['m2m:vrq'];
 				
+				
+				if(sampleCharging == undefined){
+					//console.log("it should be void ---> "+req.body['m2m:sgn']['m2m:vrq']);
 
-				for(i=0; i<entityName.length; i++){
+					
+					for(i=0; i<entityName.length; i++){
 
-					var sentData = req.body['m2m:sgn']['m2m:nev']['m2m:rep']['m2m:fcnt'][entityName[i]];
-					io.sockets.emit(eventName[i], sentData);
-					console.log(activityName + " retrieved data = "+entityName[i]+" || "+sentData+" || Event Name = "+eventName[i]);
-					
-					
+						var sentData = req.body['m2m:sgn']['m2m:nev']['m2m:rep']['m2m:fcnt'][entityName[i]];
+						io.sockets.emit(eventName[i], sentData);
+						logger.debug("Activity = "+activityName + "|| retrieved data = "+entityName[i]+" || "+sentData+" || Event Name = "+eventName[i]);
+						console.log("["+time+"]Activity ="+activityName + "|| retrieved data = "+entityName[i]+" || "+sentData+" || Event Name = "+eventName[i]);
+					}
+					io.sockets.emit(eventTime, time);
 				}
+				else{
+					console.log("["+time+"]Connection Checking.");
+					logger.debug("Connection Checking.");
+				}
+
+				
 				
 			}
 		};
 
 		var pushCommandToServer = {
-			doWork : function (sentData)	{
+			doWork : function (sentData, time)	{
 				
 				const request = require("request");
-				console.log("Push to server, data --> "+sentData);
+				console.log("["+time+"]Push to server, data --> "+sentData);
+				logger.debug("Push to server, data --> "+sentData);
+				
 		
-				/*request.put('http://192.168.0.21:8080/~/in-cse/fcnt-548319540', {sentData}, requestHeader
-					, (error, res, body) => {
-							if (error) {
-								console.error(error);
-								
-							}
-							console.log("heree");
-							console.log("statusCode: "+res.statusCode);
-							console.log(body);
-					})*/
 					var data = JSON.parse(sentData);
 					request({
 						method: "PUT",
@@ -154,8 +141,10 @@ if(loadingApp){
 					},
 					function(error, request, body){
 						var status = request.statusCode;
-						console.log("Here --> "+error+" || "+status);
-						console.log(body);
+						//logger.debug(
+						console.log("["+time+"]Error Here --> "+error+" || Status Code --> "+status+" || body -->"+body);
+						logger.debug("Error Here --> "+error+" || Status Code --> "+status+" || body --> "+body);
+						
 					 });
 			
 			}
@@ -163,17 +152,22 @@ if(loadingApp){
 
 		app.post('/solar', (req, res) => {
 
-			
-			console.log("Incoming Solar Data = "+JSON.stringify(req.body));
+			var time = getTime();
+			console.log("["+time+"]Incoming Solar Data = "+JSON.stringify(req.body));
+			logger.debug("Incoming Solar Data = "+JSON.stringify(req.body));
+
+			sendSuccessfulResponse(res, time);
 
 				var worker = getRequestedData;
 				
 				try{
-					console.log("Push Solar Data.");
-					worker.doWork(req, res, "Solar", solarEntityName, solarEventName);
+					console.log("["+time+"]Push Solar Data.");
+					logger.debug("Push Solar Data.");
+					worker.doWork(req, res, "Solar", solarEntityName, solarEventName, time, "solarTime");
 				
 				}catch(e){
-					console.log("Failed to Retrieve and to Push Solar Data " +e);
+					console.log("["+time+"]Failed to Retrieve and to Push Solar Data " +e);
+					logger.debug("Failed to Retrieve and to Push Solar Data " +e);
 				}
 				finally{
 					delete worker;
@@ -185,25 +179,49 @@ if(loadingApp){
 		
 		app.post('/battery', (req, res) => {
 
-			
-			console.log("Incoming Battery Data = "+JSON.stringify(req.body));
-			
+			var time = getTime();
+			console.log("["+time+"]Incoming Battery Data = "+JSON.stringify(req.body));
+			logger.debug("Incoming Battery Data = "+JSON.stringify(req.body));
+
+			sendSuccessfulResponse(res, time);
+
 			var worker = getRequestedData;
 			
 			try{
-				console.log("Push Battery Data.");
+				console.log("["+time+"]Push Battery Data.");
+				logger.debug("Push Battery Data.");
+				
 				var sampleCharging = req.body['m2m:sgn']['m2m:nev']['m2m:rep']['m2m:fcnt']['charging'];
+				var sampleDischarging = req.body['m2m:sgn']['m2m:nev']['m2m:rep']['m2m:fcnt']['discharging'];
+				var sampleConnectionChecking = 	req.body['m2m:sgn']['m2m:vrq'];
+
 				
 				if(sampleCharging == undefined){
-					worker.doWork(req, res, "Battery", batteryEntityName, batteryEventName);
+					if(sampleDischarging == undefined){
+						if(sampleConnectionChecking == undefined){
+							worker.doWork(req, res, "Battery", batteryEntityName, batteryEventName, time, "batteryTime");
+						}
+						else{
+							
+							console.log("["+time+"]-------- Connection Checking [Ignore!!] -------- ");
+							logger.debug("-------- Connection Checking [Ignore!!] -------- ");
+						}
+						
+					}
+					
+					else{
+						console.log("["+time+"]-------- Discharging Status [Ignore!!] -------- ");
+						logger.debug("-------- Discharging Status [Ignore!!] -------- ");
+					}
 				}
 				else{
-					console.log("Push Charging and Discharging Status");
-					//worker.doWork(req, res, "Battery", battChargeEntity,  battChargeEvent);
+					console.log("["+time+"]-------- Charging Status [Ignore!!] -------- ");
+					logger.debug("-------- Charging Status [Ignore!!] -------- ");
 				}
 				
 			}catch(e){
-				console.log("Failed to Retrieve and to Push Battery Data "+e);
+				console.log("["+time+"]Failed to Retrieve and to Push Battery Data "+e);
+				logger.debug("Failed to Retrieve and to Push Battery Data "+e);
 			}
 			finally{
 				delete worker;
@@ -214,16 +232,22 @@ if(loadingApp){
 
 		app.post('/load', (req, res) => {
 			
-			console.log("Incoming Load Data = "+JSON.stringify(req.body));
+			var time = getTime();
+			console.log("["+time+"]Incoming Load Data = "+JSON.stringify(req.body));
+			logger.debug("Incoming Load Data = "+JSON.stringify(req.body));
+
+			sendSuccessfulResponse(res, time);
 
 			var worker = getRequestedData;
 			
 			try{
-				console.log("Push Load Data.");
-				worker.doWork(req, res, "Load", loadEntityName, loadEventName);
+				console.log("["+time+"]Push Load Data.");
+				logger.debug("Push Load Data.");
+				worker.doWork(req, res, "Load", loadEntityName, loadEventName, time, "loadTime");
 			
 			}catch(e){
-				console.log("Failed to Retrieve and to Push Load Data "+e);
+				console.log("["+time+"]Failed to Retrieve and to Push Load Data "+e);
+				logger.debug("Failed to Retrieve and to Push Load Data "+e);
 			}
 			finally{
 				delete worker;
@@ -233,12 +257,11 @@ if(loadingApp){
 		});
 
 		app.post('/charging', (req, res) => {
-			
-			console.log("Charging Command "+ req.body['command']);
+			var time = getTime();
+			console.log("["+time+"]Charging Command "+ req.body['command']);
+			logger.debug("Charging Command "+ req.body['command']);
 
-			res = setReponseHeader(res);
-			res.statusCode = 200 ; 
-			res.send("Successful");
+			sendSuccessfulResponse(res, time);
 
 			var worker = pushCommandToServer;
 			var sentData = '{ "m2m:fcnt" : { "charging" : 1 } }';
@@ -248,11 +271,14 @@ if(loadingApp){
 			}
 			
 			try{
-				console.log("Push Charging Command to Server.");
-				worker.doWork(sentData);
+				console.log("["+time+"]Push Charging Command to Server.");
+				logger.debug("Push Charging Command to Server.");
+
+				worker.doWork(sentData, time);
 			
 			}catch(e){
-				console.log("Failed Push Charging Command to Server "+e);
+				console.log("["+time+"]Failed Push Charging Command to Server "+e);
+				logger.debug("Failed Push Charging Command to Server "+e);
 			}
 			finally{
 				delete worker;
@@ -262,12 +288,12 @@ if(loadingApp){
 		});
 
 		app.post('/discharging', (req, res) => {
+			var time = getTime();
+			console.log("["+time+"]Discharging Command "+ req.body['command']);
+			logger.debug("Discharging Command "+ req.body['command']);
 			
-			console.log("Discharging Command "+ req.body['command']);
 			
-			res = setReponseHeader(res);
-			res.statusCode = 200 ; 
-			res.send("Successful");
+			sendSuccessfulResponse(res, time);
 
 			var worker = pushCommandToServer;
 			var sentData = '{ "m2m:fcnt" : { "discharging" : 1 } }';
@@ -277,11 +303,13 @@ if(loadingApp){
 			}
 			
 			try{
-				console.log("Push Discharging Command to Server.");
-				worker.doWork(sentData);
+				console.log("["+time+"]Push Discharging Command to Server.");
+				logger.debug("Push Discharging Command to Server.");
+				worker.doWork(sentData, time);
 			
 			}catch(e){
-				console.log("Failed Push Discharging Command to Server "+e);
+				console.log("["+time+"]Failed Push Discharging Command to Server "+e);
+				logger.debug("Failed Push Discharging Command to Server "+e);
 			}
 			finally{
 				delete worker;
@@ -289,7 +317,26 @@ if(loadingApp){
 			}
 	
 		});
-		
+
+		function getTime(){
+
+				
+				var today = new Date();
+				var date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
+				var time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds()+":"+today.getMilliseconds();
+				var dateTime = date+' '+time;
+	  
+				return dateTime;
+			  
+		}
+		function sendSuccessfulResponse(res, time){
+			console.log("["+time+"]Return Successful Response");
+			logger.debug("Return Successful Response");
+			res = setReponseHeader(res);
+			res.statusCode = 200 ; 
+			res.send("Successful");
+		}
+
 		function setReponseHeader(res){
 			
 			res.setHeader('Content-Type', 'application/json');
@@ -299,7 +346,6 @@ if(loadingApp){
 			return res;
 		
 		}	
-
 			
 		function getMobiusData(options) {
 			const request = require("request");
@@ -316,7 +362,6 @@ if(loadingApp){
 			})
 		
 		}
-
 
 		app.listen(port, () => console.log('This app is listening on port 19998! and with POST listening and web socket is on port 19997!'));
 		
